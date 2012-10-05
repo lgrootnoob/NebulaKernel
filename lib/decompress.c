@@ -36,15 +36,15 @@
 # define unlz4 NULL
 #endif
 
-static const struct compress_format {
+struct compress_format {
 	unsigned char magic[2];
 	const char *name;
 	decompress_fn decompressor;
 };
 
-static const struct compress_format compressed_formats[] __initconst = {
-	{ {0x1f, 0x8b}, "gzip", gunzip },
-	{ {0x1f, 0x9e}, "gzip", gunzip },
+static const struct compress_format compressed_formats[] __initdata = {
+	{ {037, 0213}, "gzip", gunzip },
+	{ {037, 0236}, "gzip", gunzip },
 	{ {0x42, 0x5a}, "bzip2", bunzip2 },
 	{ {0x5d, 0x00}, "lzma", unlzma },
 	{ {0xfd, 0x37}, "xz", unxz },
