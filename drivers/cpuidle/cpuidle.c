@@ -169,7 +169,6 @@ int cpuidle_idle_call(void)
 		return 0;
 	}
 
-	trace_power_start_rcuidle(POWER_CSTATE, next_state, dev->cpu);
 	trace_cpu_idle_rcuidle(next_state, dev->cpu);
 
 	if (need_resched()) {
@@ -184,8 +183,6 @@ int cpuidle_idle_call(void)
 							    next_state);
 	else
 		entered_state = cpuidle_enter_state(dev, drv, next_state);
-
-	trace_power_end_rcuidle(dev->cpu);
 
 exit:
 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
