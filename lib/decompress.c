@@ -39,7 +39,9 @@ static const struct compress_format {
 	unsigned char magic[2];
 	const char *name;
 	decompress_fn decompressor;
-} compressed_formats[] = {
+};
+
+static const struct compress_format compressed_formats[] __initconst = {
 	{ {037, 0213}, "gzip", gunzip },
 	{ {037, 0236}, "gzip", gunzip },
 	{ {0x42, 0x5a}, "bzip2", bunzip2 },
