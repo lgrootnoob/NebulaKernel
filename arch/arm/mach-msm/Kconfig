@@ -287,6 +287,7 @@ config ARCH_MSM8974
 	select ARCH_WANT_KMAP_ATOMIC_FLUSH
 	select KRAIT_REGULATOR
 	select ENABLE_VMALLOC_SAVINGS
+	select HAS_MACH_MEMUTILS
 
 config ARCH_APQ8084
 	bool "APQ8084"
@@ -3095,5 +3096,5 @@ config ALUCARD_HOTPLUG
 	bool "Enable alucard-hotplug cpu hotplug driver"
 	default n
 	help
-	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs	  
-
+	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs
+	  
