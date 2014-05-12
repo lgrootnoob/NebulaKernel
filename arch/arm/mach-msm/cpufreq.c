@@ -50,6 +50,10 @@
 static struct cpufreq_frequency_table *dts_freq_table;
 #endif
 
+#ifdef CONFIG_CPU_VOLTAGE_TABLE
+static struct cpufreq_frequency_table *dts_freq_table;
+#endif
+
 static DEFINE_MUTEX(l2bw_lock);
 
 static struct clk *cpu_clk[NR_CPUS];
