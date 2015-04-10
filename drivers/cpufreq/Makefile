@@ -1,5 +1,5 @@
 # CPUfreq core
-obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o cpu-boost.o
+obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o # cpu-boost.o <-- Removed for alu_touch_boost
 # CPUfreq stats
 obj-$(CONFIG_CPU_FREQ_STAT)             += cpufreq_stats.o
 
