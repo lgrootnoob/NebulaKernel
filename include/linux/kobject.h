@@ -33,6 +33,7 @@
 #else
 #define UEVENT_NUM_ENVP			32	/* number of env pointers */
 #endif
+#define UEVENT_NUM_ENVP			64	/* number of env pointers */
 #define UEVENT_BUFFER_SIZE		2048	/* buffer for the variables */
 
 /* path to the userspace helper executed on an event */
