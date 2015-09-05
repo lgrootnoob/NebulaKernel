@@ -1,6 +1,9 @@
 # We can build either as part of a standalone Kernel build or part
 # of an Android build.  Determine which mechanism is being used
 ifeq ($(MODNAME),)
+
+EXTRA_CFLAGS += -Wno-discarded-array-qualifiers
+
 	KERNEL_BUILD := 1
 else
 	KERNEL_BUILD := 0
@@ -688,7 +691,7 @@ CDEFINES += -DEXISTS_MSM_SMSM
 endif
 
 # Fix build for GCC 4.7
-EXTRA_CFLAGS += -Wno-maybe-uninitialized -Wno-unused-function
+EXTRA_CFLAGS += -Wno-maybe-uninitialized -Wno-unused-function -Wno-array-bounds
 
 KBUILD_CPPFLAGS += $(CDEFINES)
 
