@@ -743,12 +743,13 @@ exit_0:
 }
 
 #ifdef PREBOOT
-STATIC int INIT decompress(unsigned char *buf, int len,
-			int(*fill)(void*, unsigned int),
-			int(*flush)(void*, unsigned int),
-			unsigned char *outbuf,
+
+STATIC int INIT __decompress(unsigned char *buf, int len,
+			int (*fill)(void*, unsigned int),
+			int (*flush)(void*, unsigned int),
+			unsigned char *outbuf, int olen,
 			int *pos,
-			void(*error)(char *x))
+			void (*error)(char *x))
 {
 	return bunzip2(buf, len - 4, fill, flush, outbuf, pos, error);
 }
