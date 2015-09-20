@@ -1034,8 +1034,6 @@ source "drivers/input/touchscreen/gt9xx/Kconfig"
 
 source "drivers/input/touchscreen/g3/Kconfig"
 
-endif
-
 config TOUCHSCREEN_SWEEP2WAKE
 	tristate "Sweep2Wake for touchscreens"
 	default n
