@@ -90,3 +90,4 @@ endif
 obj-$(CONFIG_TOUCHSCREEN_GT9XX)		+= gt9xx/
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_G3) 	+= g3/
 obj-$(CONFIG_ALUCARD_TOUCHSCREEN_BOOST)	+= alu-t-boost.o
+obj-$(CONFIG_STATE_NOTIFIER)		+= state_notifier.o
