@@ -329,6 +329,7 @@ struct sock {
 				sk_no_check  : 2,
 				sk_userlocks : 4,
 				sk_protocol  : 8,
+//whos fucking idea was it to fubar all this shit. there is no pattern to the commits and it completely strays from 3.4.y
 #define SK_PROTOCOL_MAX U8_MAX
 				sk_type      : 16;
 	kmemcheck_bitfield_end(flags);
