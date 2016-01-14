@@ -31,6 +31,7 @@
 
 #define CPUFREQ_TRANSITION_NOTIFIER	(0)
 #define CPUFREQ_POLICY_NOTIFIER		(1)
+#define CPUFREQ_GOVINFO_NOTIFIER	(2)
 
 #ifdef CONFIG_CPU_FREQ
 int cpufreq_register_notifier(struct notifier_block *nb, unsigned int list);
@@ -57,6 +58,13 @@ static inline void disable_cpufreq(void) { }
 
 #define CPUFREQ_POLICY_POWERSAVE	(1)
 #define CPUFREQ_POLICY_PERFORMANCE	(2)
+
+/* Governor Events */
+#define CPUFREQ_GOV_START	1
+#define CPUFREQ_GOV_STOP	2
+#define CPUFREQ_GOV_LIMITS	3
+#define CPUFREQ_GOV_POLICY_INIT	4
+#define CPUFREQ_GOV_POLICY_EXIT	5
 
 /* Minimum frequency cutoff to notify the userspace about cpu utilization
  * changes */
@@ -91,11 +99,15 @@ struct cpufreq_real_policy {
 };
 
 struct cpufreq_policy {
-	cpumask_var_t		cpus;	/* CPUs requiring sw coordination */
-	cpumask_var_t		related_cpus; /* CPUs with any coordination */
-	unsigned int		shared_type; /* ANY or ALL affected CPUs
+	/* CPUs sharing clock, require sw coordination */
+	cpumask_var_t		cpus;	/* Online CPUs only */
+	cpumask_var_t		related_cpus; /* Online + Offline CPUs */
+
+	unsigned int		shared_type; /* ACPI: ANY or ALL affected CPUs
 						should set cpufreq */
-	unsigned int		cpu;    /* cpu nr of registered CPU */
+	unsigned int		cpu;    /* cpu nr of CPU managing this policy */
+	unsigned int		last_cpu; /* cpu nr of previous CPU that managed
+					   * this policy */
 	struct cpufreq_cpuinfo	cpuinfo;/* see above */
 
 	unsigned int		min;    /* in kHz */
@@ -105,20 +117,43 @@ struct cpufreq_policy {
 	unsigned int            util;  /* CPU utilization at max frequency */
 	unsigned int		policy; /* see above */
 	struct cpufreq_governor	*governor; /* see below */
+	void			*governor_data;
+	bool			governor_enabled; /* governor start/stop flag */
 
 	struct work_struct	update; /* if update_policy() needs to be
 					 * called, but you're in IRQ context */
 
 	struct cpufreq_real_policy	user_policy;
 
+	struct list_head        policy_list;
 	struct kobject		kobj;
 	struct completion	kobj_unregister;
+
+	/*
+	 * The rules for this semaphore:
+	 * - Any routine that wants to read from the policy structure will
+	 *   do a down_read on this semaphore.
+	 * - Any routine that will write to the policy structure and/or may take away
+	 *   the policy altogether (eg. CPU hotplug), will hold this lock in write
+	 *   mode before doing so.
+	 *
+	 * Additional rules:
+	 * - Lock should not be held across
+	 *     __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
+	 */
+	struct rw_semaphore	rwsem;
 };
 
 #define CPUFREQ_ADJUST		(0)
 #define CPUFREQ_INCOMPATIBLE	(1)
 #define CPUFREQ_NOTIFY		(2)
 #define CPUFREQ_START		(3)
+
+#define CPUFREQ_CREATE_POLICY	(5)
+#define CPUFREQ_REMOVE_POLICY	(6)
+
+/* Govinfo Notifiers */
+#define CPUFREQ_LOAD_CHANGE	(0)
 
 #define CPUFREQ_SHARED_TYPE_NONE (0) /* None */
 #define CPUFREQ_SHARED_TYPE_HW	 (1) /* HW does needed coordination */
@@ -176,6 +211,7 @@ static inline unsigned long cpufreq_scale(unsigned long old, u_int div, u_int mu
 
 struct cpufreq_governor {
 	char	name[CPUFREQ_NAME_LEN];
+	int	initialized;
 	int	(*governor)	(struct cpufreq_policy *policy,
 				 unsigned int event);
 	ssize_t	(*show_setspeed)	(struct cpufreq_policy *policy,
@@ -258,6 +294,14 @@ struct cpufreq_driver {
 #define CPUFREQ_PM_NO_WARN	0x04	/* don't warn on suspend/resume speed
 					 * mismatches */
 
+/*
+ * This should be set by platforms having multiple clock-domains, i.e.
+ * supporting multiple policies. With this sysfs directories of governor would
+ * be created in cpu/cpu<num>/cpufreq/ directory and so they can use the same
+ * governor with different tunables for different clusters.
+ */
+#define CPUFREQ_HAVE_GOVERNOR_PER_POLICY (1 << 3)
+
 int cpufreq_register_driver(struct cpufreq_driver *driver_data);
 int cpufreq_unregister_driver(struct cpufreq_driver *driver_data);
 
@@ -322,6 +366,8 @@ __ATTR(_name, 0644, show_##_name, store_##_name)
 u64 get_cpu_idle_time(unsigned int cpu, u64 *wall, int io_busy);
 int cpufreq_get_policy(struct cpufreq_policy *policy, unsigned int cpu);
 int cpufreq_update_policy(unsigned int cpu);
+bool have_governor_per_policy(void);
+struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy);
 
 #ifdef CONFIG_MSM_LIMITER
 int cpufreq_set_gov(char *target_gov, unsigned int cpu);
@@ -335,6 +381,10 @@ int cpufreq_get_min(unsigned int cpu);
 #ifdef CONFIG_CPU_FREQ
 /* query the current CPU frequency (in kHz). If zero, cpufreq couldn't detect it */
 unsigned int cpufreq_get(unsigned int cpu);
+unsigned int cpufreq_quick_get(unsigned int cpu);
+unsigned int cpufreq_quick_get_max(unsigned int cpu);
+unsigned int cpufreq_quick_get_util(unsigned int cpu);
+void disable_cpufreq(void);
 #else
 static inline unsigned int cpufreq_get(unsigned int cpu)
 {
@@ -357,6 +407,9 @@ static inline unsigned int cpufreq_quick_get_max(unsigned int cpu)
 }
 #endif
 
+enum {
+	BOOT_CPU = 0,
+};
 
 /*********************************************************************
  *                       CPUFREQ DEFAULT GOVERNOR                    *
@@ -367,11 +420,15 @@ static inline unsigned int cpufreq_quick_get_max(unsigned int cpu)
   Performance governor is fallback governor if any other gov failed to
   auto load due latency restrictions
 */
+
+/* ### Main Default ## */
 #ifdef CONFIG_CPU_FREQ_GOV_PERFORMANCE
 extern struct cpufreq_governor cpufreq_gov_performance;
 #endif
 #ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_performance)
+
+/* ### Default FallBack Govs ## */
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE)
 extern struct cpufreq_governor cpufreq_gov_powersave;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_powersave)
@@ -389,6 +446,7 @@ extern struct cpufreq_governor cpufreq_gov_interactive;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_interactive)
 #endif
 
+/* ######################################################################### */
 
 /*********************************************************************
  *                     FREQUENCY TABLE HELPERS                       *
