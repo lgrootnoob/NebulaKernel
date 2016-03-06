@@ -78,6 +78,7 @@ struct msdos_sb_info {
 	const void *dir_ops;		     /* Opaque; default directory operations */
 	int dir_per_block;	     /* dir entries per block */
 	int dir_per_block_bits;	     /* log2(dir_per_block) */
+	unsigned long vol_id;        /* volume ID */
 
 	int fatent_shift;
 	struct fatent_operations *fatent_ops;
@@ -328,10 +329,14 @@ extern int fat_flush_inodes(struct super_block *sb, struct inode *i1,
 /* fat/misc.c */
 extern __printf(3, 4) __cold
 void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...);
-#define fat_fs_error(sb, fmt, args...)		\
-	__fat_fs_error(sb, 1, fmt , ## args)
 #define fat_fs_error_ratelimit(sb, fmt, args...) \
 	__fat_fs_error(sb, __ratelimit(&MSDOS_SB(sb)->ratelimit), fmt , ## args)
+/*
+ * If removable devices with a fat fs are removed without a unmount, further
+ * accesses to the device by applications causes a large number of error prints
+ * & in some cases leads to watchdog bark.
+ */
+#define fat_fs_error(sb, fmt, args...)	fat_fs_error_ratelimit(sb, fmt, ## args)
 __printf(3, 4) __cold
 void fat_msg(struct super_block *sb, const char *level, const char *fmt, ...);
 extern int fat_clusters_flush(struct super_block *sb);

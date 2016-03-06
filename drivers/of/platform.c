@@ -78,7 +78,12 @@ void of_device_make_bus_id(struct device *dev)
 	struct device_node *node = dev->of_node;
 	const u32 *reg;
 	u64 addr;
+	const __be32 *addrp;
 	int magic;
+#ifdef CONFIG_MACH_LGE
+	int id, ret;
+	const char *name;
+#endif
 
 #ifdef CONFIG_PPC_DCR
 	/*
@@ -105,13 +110,42 @@ void of_device_make_bus_id(struct device *dev)
 	 */
 	reg = of_get_property(node, "reg", NULL);
 	if (reg) {
-		addr = of_translate_address(node, reg);
+		if (of_can_translate_address(node)) {
+			addr = of_translate_address(node, reg);
+		} else {
+			addrp = of_get_address(node, 0, NULL, NULL);
+			if (addrp)
+				addr = of_read_number(addrp, 1);
+			else
+				addr = OF_BAD_ADDR;
+		}
 		if (addr != OF_BAD_ADDR) {
 			dev_set_name(dev, "%llx.%s",
 				     (unsigned long long)addr, node->name);
 			return;
 		}
 	}
+
+#ifdef CONFIG_MACH_LGE
+	/* if "platform,dev,id" and "platform,dev,name" are set both,
+	 * use name.id as device name. if "platform,dev,id" is set only,
+	 * node name.id will be assigned. Also if "platform,dev,id" is 0,
+	 * only "platform,dev,name" (or node name if none) is device name.
+	 */
+	ret = of_property_read_u32(node, "platform,dev,id", &id);
+	if (!ret) {
+		ret = of_property_read_string(node, "platform,dev,name", &name);
+		if (!ret) {
+			if (id == 0) {
+				dev_set_name(dev, "%s", name);
+				return;
+			}
+			dev_set_name(dev, "%s.%d", name, id);
+		} else
+			dev_set_name(dev, "%s.%d", node->name, id);
+		return;
+	}
+#endif
 
 	/*
 	 * No BusID, use the node name and add a globally incremented
@@ -140,8 +174,9 @@ struct platform_device *of_device_alloc(struct device_node *np,
 		return NULL;
 
 	/* count the io and irq resources */
-	while (of_address_to_resource(np, num_reg, &temp_res) == 0)
-		num_reg++;
+	if (of_can_translate_address(np))
+		while (of_address_to_resource(np, num_reg, &temp_res) == 0)
+			num_reg++;
 	num_irq = of_irq_count(np);
 
 	/* Populate the resource table */
@@ -196,6 +231,10 @@ struct platform_device *of_platform_device_create_pdata(
 
 	if (!of_device_is_available(np))
 		return NULL;
+#ifdef CONFIG_MACH_LGE
+	if (!of_device_is_available_revision(np))
+		return NULL;
+#endif
 
 	dev = of_device_alloc(np, bus_id, parent);
 	if (!dev)
@@ -204,7 +243,7 @@ struct platform_device *of_platform_device_create_pdata(
 #if defined(CONFIG_MICROBLAZE)
 	dev->archdata.dma_mask = 0xffffffffUL;
 #endif
-	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+	dev->dev.coherent_dma_mask = DMA_BIT_MASK(sizeof(dma_addr_t) * 8);
 	dev->dev.bus = &platform_bus_type;
 	dev->dev.platform_data = platform_data;
 
@@ -317,10 +356,9 @@ static const struct of_dev_auxdata *of_dev_lookup(const struct of_dev_auxdata *l
 	for(; lookup->compatible != NULL; lookup++) {
 		if (!of_device_is_compatible(np, lookup->compatible))
 			continue;
-		if (of_address_to_resource(np, 0, &res))
-			continue;
-		if (res.start != lookup->phys_addr)
-			continue;
+		if (!of_address_to_resource(np, 0, &res))
+			if (res.start != lookup->phys_addr)
+				continue;
 		pr_debug("%s: devname=%s\n", np->full_name, lookup->name);
 		return lookup;
 	}

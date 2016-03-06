@@ -24,32 +24,19 @@
 #include <linux/slab.h>
 #include <linux/proc_fs.h>
 
-/**
- * struct alias_prop - Alias property in 'aliases' node
- * @link:	List node to link the structure in aliases_lookup list
- * @alias:	Alias property name
- * @np:		Pointer to device_node that the alias stands for
- * @id:		Index value from end of alias name
- * @stem:	Alias string without the index
- *
- * The structure represents one alias property of 'aliases' node as
- * an entry in aliases_lookup list.
- */
-struct alias_prop {
-	struct list_head link;
-	const char *alias;
-	struct device_node *np;
-	int id;
-	char stem[0];
-};
+#include "of_private.h"
 
-static LIST_HEAD(aliases_lookup);
+#ifdef CONFIG_MACH_LGE
+#include <mach/board_lge.h>
+#endif
+
+LIST_HEAD(aliases_lookup);
 
 struct device_node *allnodes;
 struct device_node *of_chosen;
 struct device_node *of_aliases;
 
-static DEFINE_MUTEX(of_aliases_mutex);
+DEFINE_MUTEX(of_aliases_mutex);
 
 /* use when traversing tree through the allnext, child, sibling,
  * or parent members of struct device_node.
@@ -293,6 +280,117 @@ int of_device_is_available(const struct device_node *device)
 }
 EXPORT_SYMBOL(of_device_is_available);
 
+#ifdef CONFIG_MACH_LGE
+int compare_revision(const char *revision)
+{
+	char range = 0;
+	char min_rev_str[16];
+	char max_rev_str[16];
+	char min_rev_no = 0;
+	char max_rev_no = 0;
+	int i = 0, j = 0;
+
+	memset(min_rev_str, 0x0, sizeof(min_rev_str));
+	memset(max_rev_str, 0x0, sizeof(min_rev_str));
+
+	if (revision[0] != '.') {
+		while (revision[i] != 0 && revision[i] != '.')
+			min_rev_str[j++] = revision[i++];
+
+		if (revision[i] == '.' && revision[i + 1] == '.' &&
+				revision[i + 2] == '.') {
+			range = 1;
+			i += 3;
+			j = 0;
+			while (revision[i] != 0)
+				max_rev_str[j++] = revision[i++];
+		}
+	} else {
+		if (revision[i] == '.' && revision[i + 1] == '.' &&
+				revision[i + 2] == '.') {
+			range = 1;
+			i += 3;
+			while (revision[i] != 0)
+				max_rev_str[j++] = revision[i++];
+		}
+	}
+
+	if (!min_rev_str[0]) {
+		min_rev_no = HW_REV_EVB1;
+	} else {
+		for (i = 0; i < HW_REV_MAX; ++i) {
+			if (!strcmp(rev_str[i], min_rev_str)) {
+				min_rev_no = i;
+				break;
+			}
+		}
+
+		if (i == HW_REV_MAX) {
+			pr_err("wrong min revision string = %s\n", min_rev_str);
+			return 0;
+		}
+	}
+
+	if (!max_rev_str[0]) {
+		max_rev_no = HW_REV_MAX - 1;
+	} else {
+		for (i = 0; i < HW_REV_MAX; ++i) {
+			if (!strcmp(rev_str[i], max_rev_str)) {
+				max_rev_no = i;
+				break;
+			}
+		}
+
+		if (i == HW_REV_MAX) {
+			pr_err("wrong max revision string = %s\n", max_rev_str);
+			return 0;
+		}
+	}
+
+	if (range) {
+		if (min_rev_no <= lge_get_board_revno() &&
+				lge_get_board_revno() <= max_rev_no)
+			return 1;
+		else
+			return 0;
+	} else {
+		if (min_rev_no == lge_get_board_revno())
+			return 1;
+		else
+			return 0;
+	}
+}
+
+/**
+ *  of_device_is_available_revision - check if a device is available for use in specific revision
+ *
+ *  @device: Node to check for availability in specific revision
+ *
+ *  Returns 1 if the status property is absent or equal to present revision.
+ *  0 otherwise
+ */
+int of_device_is_available_revision(struct device_node *device)
+{
+	int count;
+	int i;
+	const char *revision = NULL;
+
+	count = of_property_count_strings(device, "revision");
+	if (count < 0)
+		return 1;
+
+	for (i = 0; i < count; i++) {
+		of_property_read_string_index(device, "revision", i, &revision);
+
+		if (compare_revision(revision))
+			return 1;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(of_device_is_available_revision);
+#endif
+
 /**
  *	of_get_parent - Get a node's parent if any
  *	@node:	Node to get parent
@@ -362,6 +460,33 @@ struct device_node *of_get_next_child(const struct device_node *node,
 	return next;
 }
 EXPORT_SYMBOL(of_get_next_child);
+
+/**
+ *	of_get_next_available_child - Find the next available child node
+ *	@node:	parent node
+ *	@prev:	previous child of the parent node, or NULL to get first
+ *
+ *      This function is like of_get_next_child(), except that it
+ *      automatically skips any disabled nodes (i.e. status = "disabled").
+ */
+struct device_node *of_get_next_available_child(const struct device_node *node,
+	struct device_node *prev)
+{
+	struct device_node *next;
+
+	read_lock(&devtree_lock);
+	next = prev ? prev->sibling : node->child;
+	for (; next; next = next->sibling) {
+		if (!of_device_is_available(next))
+			continue;
+		if (of_node_get(next))
+			break;
+	}
+	of_node_put(prev);
+	read_unlock(&devtree_lock);
+	return next;
+}
+EXPORT_SYMBOL(of_get_next_available_child);
 
 /**
  *	of_find_node_by_path - Find a node matching a full OF path
