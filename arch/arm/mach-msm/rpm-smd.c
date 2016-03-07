@@ -76,7 +76,7 @@ struct msm_rpm_driver_data {
 #ifdef CONFIG_SHITTY_VARIANT
 static ATOMIC_NOTIFIER_HEAD(msm_rpm_sleep_notifier);
 #else
-static __refdata ATOMIC_NOTIFIER_HEAD(msm_rpm_sleep_notifier);
+static ATOMIC_NOTIFIER_HEAD(msm_rpm_sleep_notifier);
 #endif
 static bool standalone;
 
@@ -321,7 +321,7 @@ int msm_rpm_smd_buffer_request(char *buf, uint32_t size, gfp_t flag)
 #ifdef CONFIG_SHITTY_VARIANT
 	static DEFINE_SPINLOCK(slp_buffer_lock);
 #else
-	static __refdata DEFINE_SPINLOCK(slp_buffer_lock);
+	static DEFINE_SPINLOCK(slp_buffer_lock);
 #endif
 	unsigned long flags;
 
@@ -463,7 +463,7 @@ struct msm_rpm_wait_data {
 #ifdef CONFIG_SHITTY_VARIANT
 DEFINE_SPINLOCK(msm_rpm_list_lock);
 #else
-__refdata DEFINE_SPINLOCK(msm_rpm_list_lock);
+DEFINE_SPINLOCK(msm_rpm_list_lock);
 #endif
 
 struct msm_rpm_ack_msg {
@@ -1418,7 +1418,7 @@ fail:
 #ifdef CONFIG_SHITTY_VARIANT
 static struct of_device_id msm_rpm_match_table[] =  {
 #else
-static struct of_device_id msm_rpm_match_table[] __initdata =  {
+static struct of_device_id msm_rpm_match_table[] =  {
 #endif
 	{.compatible = "qcom,rpm-smd"},
 	{},
