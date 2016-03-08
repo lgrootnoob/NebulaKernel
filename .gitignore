@@ -29,9 +29,11 @@ modules.builtin
 *.bz2
 *.lzma
 *.xz
+*.lz4
 *.lzo
 *.patch
 *.gcno
+*.bak
 
 #
 # Top-level generic files
@@ -84,3 +86,17 @@ GTAGS
 *.orig
 *~
 \#*#
+
+# Generated source files
+arch/arm/boot/compressed/bswapsdi2.S
+smd_rpc_sym.c
+
+# ToolChains to Ignore
+BUILDKERNEL/toolchain/arm-eabi-4.9/
+BUILDKERNEL/toolchain/arm-eabi-4.8/
+
+
+# RAMDISK & UCI Synapse Script Files
+!ramdisk/*
+!ramdisk/res/*
+!ramdisk/sbin/*
