@@ -103,7 +103,7 @@ static int msm_ext_buck_probe(struct platform_device *pdev)
 #ifdef CONFIG_SHITTY_VARIANT
 static struct of_device_id msm_ext_buck_table[] = {
 #else
-static struct of_device_id msm_ext_buck_table[] = {
+static struct of_device_id msm_ext_buck_table[] __initdata = {
 #endif
 	{.compatible = "qcom,ext-buck-control"},
 	{},

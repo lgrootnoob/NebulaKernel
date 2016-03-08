@@ -120,7 +120,7 @@ static char *msm_pm_sleep_mode_labels[MSM_PM_SLEEP_MODE_NR] = {
 #ifdef CONFIG_SHITTY_VARIANT
 static bool msm_pm_ldo_retention_enabled = true;
 #else
-static bool msm_pm_ldo_retention_enabled = true;
+static bool msm_pm_ldo_retention_enabled __refdata = true;
 #endif
 static bool msm_no_ramp_down_pc;
 static struct msm_pm_sleep_status_data *msm_pm_slp_sts;
@@ -131,7 +131,7 @@ static int cpu_count;
 #ifdef CONFIG_SHITTY_VARIANT
 static DEFINE_SPINLOCK(cpu_cnt_lock);
 #else
-static DEFINE_SPINLOCK(cpu_cnt_lock);
+static __refdata DEFINE_SPINLOCK(cpu_cnt_lock);
 #endif
 #define SCM_HANDOFF_LOCK_ID "S:7"
 static bool need_scm_handoff_lock;
@@ -149,7 +149,7 @@ static void __iomem *msm_pc_debug_counters;
 #ifdef CONFIG_SHITTY_VARIANT
 static enum msm_pm_l2_scm_flag msm_pm_flush_l2_flag = MSM_SCM_L2_OFF;
 #else
-static enum msm_pm_l2_scm_flag msm_pm_flush_l2_flag = MSM_SCM_L2_OFF;
+static enum msm_pm_l2_scm_flag msm_pm_flush_l2_flag __refdata = MSM_SCM_L2_OFF;
 #endif
 
 void msm_pm_set_l2_flush_flag(enum msm_pm_l2_scm_flag flag)
@@ -167,7 +167,7 @@ static cpumask_t retention_cpus;
 #ifdef CONFIG_SHITTY_VARIANT
 static DEFINE_SPINLOCK(retention_lock);
 #else
-static DEFINE_SPINLOCK(retention_lock);
+static __refdata DEFINE_SPINLOCK(retention_lock);
 #endif
 
 static int msm_pm_get_pc_mode(struct device_node *node,
@@ -1014,7 +1014,7 @@ static int msm_cpu_status_probe(struct platform_device *pdev)
 #ifdef CONFIG_SHITTY_VARIANT
 static struct of_device_id msm_slp_sts_match_tbl[] = {
 #else
-static struct of_device_id msm_slp_sts_match_tbl[] = {
+static struct of_device_id msm_slp_sts_match_tbl[] __initdata = {
 #endif
 	{.compatible = "qcom,cpu-sleep-status"},
 	{},
@@ -1032,7 +1032,7 @@ static struct platform_driver msm_cpu_status_driver = {
 #ifdef CONFIG_SHITTY_VARIANT
 static struct of_device_id msm_snoc_clnt_match_tbl[] = {
 #else
-static struct of_device_id msm_snoc_clnt_match_tbl[] = {
+static struct of_device_id msm_snoc_clnt_match_tbl[] __initdata = {
 #endif
 	{.compatible = "qcom,pm-snoc-client"},
 	{},
@@ -1303,7 +1303,7 @@ static int msm_cpu_pm_probe(struct platform_device *pdev)
 #ifdef CONFIG_SHITTY_VARIANT
 static struct of_device_id msm_cpu_pm_table[] = {
 #else
-static struct of_device_id msm_cpu_pm_table[] = {
+static struct of_device_id msm_cpu_pm_table[] __initdata = {
 #endif
 	{.compatible = "qcom,pm-8x60"},
 	{},
