@@ -2,6 +2,6 @@
 
 if ARCH_MSM
 	
-source "drivers/soc/qcom/hotplug/Kconfig"	
+# source "drivers/soc/qcom/hotplug/Kconfig"	
 
 endif # ARCH_MSM
