@@ -11,9 +11,9 @@ NAME = Saber-toothed Squirrel
 # expect to learn how to build the kernel reading this file.
 
 ############################################################################
-## Makefile Mods By Eliminater74 03/07/2016
+## Makefile Mods By Eliminater74 03/11/2016
 ##
-## * v10.0 *
+## * v10.1 *
 ############################################################################
 # Do not:
 # o  use make's built-in rules and variables
@@ -390,6 +390,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -mcpu=cortex-a15 -mtune=cortex-a15 -mfpu=neon-vfpv4 -marm \
 		   -fno-diagnostics-show-caret -fno-pic \
 		   -Wno-unused-variable \
+		   -Wno-maybe-uninitialized \
 		   $(KERNELFLAGS)
 		   
 KBUILD_AFLAGS_KERNEL := $(KERNELFLAGS)
