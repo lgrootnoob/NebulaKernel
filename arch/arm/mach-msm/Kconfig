@@ -3065,6 +3065,8 @@ config KERNEL_TEXT_MPU_PROT
           all masters; Write access is only permited to the
           secure world.
 	  
+endif 
+	  
 config MSM_HOTPLUG
 	bool "MSM hotplug driver"
 	depends on HOTPLUG_CPU
@@ -3094,4 +3096,4 @@ config ALUCARD_HOTPLUG
 	default n
 	help
 	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs	  
-endif
+
