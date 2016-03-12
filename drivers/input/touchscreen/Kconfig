@@ -1047,7 +1047,7 @@ config ALUCARD_TOUCHSCREEN_BOOST
 
 config STATE_NOTIFIER
         bool "State Notifier"
-	depends on TOUCHSCREEN_SYNAPTICS_G2
+	depends on TOUCHSCREEN_SYNAPTICS_G3
 	default y
 
 endif
