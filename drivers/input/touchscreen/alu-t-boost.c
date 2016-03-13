@@ -30,6 +30,7 @@
 #include <linux/slab.h>
 #include <linux/input.h>
 #include <linux/time.h>
+#include <linux/msm_thermal.h>
 
 /*
  * debug = 1 will print all
@@ -47,7 +48,7 @@ static struct workqueue_struct *touch_boost_wq;
 static struct delayed_work input_boost_rem;
 static struct work_struct input_boost_work;
 
-static unsigned int input_boost_freq;
+static unsigned int input_boost_freq = 960000;
 module_param(input_boost_freq, uint, 0644);
 
 static unsigned int input_boost_ms = 40;
@@ -92,6 +93,12 @@ static void do_input_boost(struct work_struct *work)
 {
 	unsigned int cpu;
 	unsigned nr_cpus = nr_boost_cpus;
+
+	if (cpu_temp_for_touch_boost > 70) {
+		dprintk("Input boost skipped! cpu temp is %d\n",
+			cpu_temp_for_touch_boost);
+		return;
+	}
 
 	cancel_delayed_work_sync(&input_boost_rem);
 
