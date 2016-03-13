@@ -1040,7 +1040,7 @@ config TOUCHSCREEN_SWEEP2WAKE
 
 config ALUCARD_TOUCHSCREEN_BOOST
 	tristate "Touchscreen boost"
-	depends on MSM_CPUFREQ_LIMITER
+	depends on MSM_LIMITER
 	default y
 	help
 	  Alucard touchscreen boost.
