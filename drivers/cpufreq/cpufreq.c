@@ -54,6 +54,9 @@ static DEFINE_PER_CPU(struct cpufreq_cpu_save_data, cpufreq_policy_save);
 #endif
 static DEFINE_SPINLOCK(cpufreq_driver_lock);
 
+static struct kset *cpufreq_kset;
+static struct kset *cpudev_kset;
+
 /*
  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
  * all cpufreq/hotplug/workqueue/etc related lock issues.
@@ -468,10 +471,21 @@ show_one(cpuinfo_max_freq, cpuinfo.max_freq);
 show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
 show_one(scaling_min_freq, min);
 show_one(scaling_max_freq, max);
-show_one(scaling_cur_freq, cur);
 show_one(cpu_utilization, util);
 show_one(policy_min_freq, user_policy.min);
 show_one(policy_max_freq, user_policy.max);
+
+static ssize_t show_scaling_cur_freq(
+	struct cpufreq_policy *policy, char *buf)
+{
+	ssize_t ret;
+
+	if (cpufreq_driver && cpufreq_driver->setpolicy && cpufreq_driver->get)
+		ret = sprintf(buf, "%u\n", cpufreq_driver->get(policy->cpu));
+	else
+		ret = sprintf(buf, "%u\n", policy->cur);
+	return ret;
+}
 
 static int __cpufreq_set_policy(struct cpufreq_policy *data,
 				struct cpufreq_policy *policy);
@@ -859,6 +873,16 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
 				   &dev->kobj, "cpufreq");
 	if (ret)
 		return ret;
+
+	/* create cpu device kset */
+	if (!cpudev_kset) {
+		cpudev_kset = kset_create_and_add("kset", NULL, &dev->kobj);
+		BUG_ON(!cpudev_kset);
+		dev->kobj.kset = cpudev_kset;
+	}
+
+	/* send uevent when cpu device is added */
+	kobject_uevent(&dev->kobj, KOBJ_ADD);
 
 	/* set up files for this cpu device */
 	drv_attr = cpufreq_driver->attr;
@@ -1630,7 +1654,108 @@ int cpufreq_unregister_notifier(struct notifier_block *nb, unsigned int list)
 }
 EXPORT_SYMBOL(cpufreq_unregister_notifier);
 
+#if defined(CONFIG_LGE_LOW_BATT_LIMIT)
+#define BOOT_ARGS "chosen"
+static long	soc = 0;
+#include <linux/of.h>
 
+static int parse_batt_soc_bootarg(void)
+{
+	struct device_node *chosen_node;
+	static const char *cmd_line;
+	int rc = 0, len = 0, name_len = 0, cmd_len = 0;
+	char batt_soc[3] = {0,};
+	char *sidx, *eidx;
+	chosen_node = of_find_node_by_name(NULL, BOOT_ARGS);
+	if (!chosen_node) {
+		pr_err("%s: get chosen node failed\n", __func__);
+		return -ENODEV;
+	}
+
+	cmd_line = of_get_property(chosen_node, "bootargs", &len);
+	if (!cmd_line || len <= 0) {
+		pr_err("%s: get bootargs failed\n", __func__);
+		return -ENODEV;
+	}
+
+	name_len = strlen("batt.soc=");
+	cmd_len = strlen(cmd_line);
+	sidx = strnstr(cmd_line, "batt.soc=", cmd_len);
+	if (!sidx) {
+		pr_err("failed batt soc from boot command\n");
+		return -ENODEV;
+	}
+	sidx += name_len;
+
+	eidx = strnstr(sidx, " ", 10);
+
+	if (!eidx) {
+		eidx = sidx + strlen(sidx) + 1;
+	}
+
+	if (eidx <= sidx) {
+		return -ENODEV;
+	}
+
+	*eidx = 0;
+	len = eidx - sidx + 1;
+	if (len <= 0) {
+		return -ENODEV;
+	}
+
+	strncpy(batt_soc, sidx, strlen(sidx));
+	of_node_put(chosen_node);
+	if (strict_strtol(batt_soc, 10, &soc) != 0) {
+		return -ENODEV;
+	}
+
+	return rc;
+}
+
+#define MAX_CPUS (4)
+#define LOW_BATT_LIMIT_THRESHOLD (5)
+#define PREV_FREQ_INDEX			(2)
+typedef struct low_battery_llimit {
+	struct cpufreq_frequency_table *table;
+	int	last_cpufreq_index;
+}low_batt_limitation;
+static  low_batt_limitation low_battery_limit[MAX_CPUS];
+static int out_low_battery_limit = 0;
+static int set_clear_limit(const char *val, struct kernel_param *kp)
+{
+	int ret = 0;
+	ret = param_set_int(val, kp);
+	if (ret) {
+		pr_err("error setting value %d\n", ret);
+		return ret;
+	}
+	out_low_battery_limit = 1;
+	pr_info(" low batt limitation is clear by thermal\n");
+	return ret;
+}
+
+module_param_call(out_low_battery_limit, set_clear_limit,
+	param_get_int, &out_low_battery_limit, 0644);
+
+static void init_freq_table(void)
+{
+	int cpu_i , freq_i;
+	for( cpu_i = 0 ; cpu_i < MAX_CPUS; cpu_i++) {
+		low_battery_limit[cpu_i].table = 0;
+		low_battery_limit[cpu_i].last_cpufreq_index = 0;
+
+		low_battery_limit[cpu_i].table = cpufreq_frequency_get_table(cpu_i);
+		if(low_battery_limit[cpu_i].table > 0) {
+			for (freq_i = 0; (low_battery_limit[cpu_i].table[freq_i].frequency != CPUFREQ_TABLE_END); freq_i++) {
+				low_battery_limit[cpu_i].last_cpufreq_index = freq_i;
+				if (low_battery_limit[cpu_i].table[freq_i].frequency == CPUFREQ_ENTRY_INVALID) {
+					continue;
+				}
+			}
+		}
+	}
+}
+#endif
 /*********************************************************************
  *                              GOVERNORS                            *
  *********************************************************************/
@@ -2316,6 +2441,15 @@ static int __init cpufreq_core_init(void)
 
 	cpufreq_global_kobject = kobject_create_and_add("cpufreq", &cpu_subsys.dev_root->kobj);
 	BUG_ON(!cpufreq_global_kobject);
+#if defined(CONFIG_LGE_LOW_BATT_LIMIT)
+	parse_batt_soc_bootarg();
+#endif
+
+	/* create cpufreq kset */
+	cpufreq_kset = kset_create_and_add("kset", NULL, cpufreq_global_kobject);
+	BUG_ON(!cpufreq_kset);
+	cpufreq_global_kobject->kset = cpufreq_kset;
+
 	register_syscore_ops(&cpufreq_syscore_ops);
 
 	return 0;
