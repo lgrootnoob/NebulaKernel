@@ -701,7 +701,7 @@ case $menuitem in
 		Settings) menu_settings ;;
 		Test) file=build-anykernel.sh; check_filesize ;;
 		2Test) echo "kernel: $KERNEL_DIR and $ZIMAGE_DIR"; exit ;;
-		Exit) echo "Bye"; exit;;
+		Exit) echo "Bye"; return;;
 		Cancel) exit ;;
 		255) echo "Cancel"; exit;;
 esac
@@ -711,6 +711,7 @@ esac
 
 #### Main Menu Start ####
 main() {
+		rm -rf firmware/synaptics/g3/*gen*
 	set_timestamp
     main_menu
 }
