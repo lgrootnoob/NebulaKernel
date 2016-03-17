@@ -230,7 +230,7 @@ function check_filesize() {
 	minsize=3
 	maxsize=18
 	cd $ZIP_MOVE
-	file="NebulaKernel_""$REV""_MR_""$VARIANT""_""$KVER"".zip"
+	file="Nebula2eKernel_""$REV""_MR_""$VARIANT""_""$KVER"".zip"
 	actualsize=$(du -k "$file" | cut -f 1)
 	if [ $actualsize -ge $maxsize ]; then
     echo size is over $maxsize kilobytes
@@ -268,7 +268,7 @@ function bump_defconfigs() {
 		do
 		DEFCONFIG="${x}_defconfig"
 		cd $DEFCONFIGS
-		sed -i '9s/.*/CONFIG_LOCALVERSION="-Nebula_Rev'$BUMP_REV'"/' $DEFCONFIG
+		sed -i '9s/.*/CONFIG_LOCALVERSION="-Nebula2E_Rev'$BUMP_REV'"/' $DEFCONFIG
 		
 		cd $KERNEL_DIR
 done
@@ -457,7 +457,7 @@ function menu_settings() {
 		echo "Test1: $TestBuild"
 		if [ $TestBuild == '1' ]; then
 			echo "This worked:" 
-			#cp NebulaKernel_"$REV"_MR_"$VARIANT"_"$KVER".zip $COPY_ZIP
+			#cp Nebula2eKernel_"$REV"_MR_"$VARIANT"_"$KVER".zip $COPY_ZIP
 			else
 			echo "Didnt Work" 
 		fi
@@ -525,9 +525,9 @@ function make_zip {
 		cp -vr $RAMDISK_NEBULA_DIR $REPACK_DIR
 		fi
 		cd $REPACK_DIR
-		zip -r9 NebulaKernel_"$REV"_MR_"$VARIANT"_"$KVER".zip *
-		mv NebulaKernel_"$REV"_MR_"$VARIANT"_"$KVER".zip $ZIP_MOVE
-		rm -rf NebulaKernel_"$REV"_MR_"$VARIANT"_"$KVER".zip
+		zip -r9 Nebula2eKernel_"$REV"_MR_"$VARIANT"_"$KVER".zip *
+		mv Nebula2eKernel_"$REV"_MR_"$VARIANT"_"$KVER".zip $ZIP_MOVE
+		rm -rf Nebula2eKernel_"$REV"_MR_"$VARIANT"_"$KVER".zip
 		cd $KERNEL_DIR
 }
 
@@ -539,7 +539,7 @@ function finished_build {
 	check_filesize
 		if [ -e $ZIMAGE_DIR/$KERNEL ]; then
 	dialog --title  "Build Finished"  --backtitle  "Build Finished" \
-	--infobox  "NebulaKernel_'$REV'_MR_'$VARIANT'_'$KVER'.zip \n\
+	--infobox  "Nebula2eKernel_'$REV'_MR_'$VARIANT'_'$KVER'.zip \n\
 	Created Successfully..\n\
 	FileSize: $actualsize kb \n\
     Time: $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds." 7 65 ; read 
@@ -548,7 +548,7 @@ dialog --title  "Build Not Completed"  --backtitle  "Build Had Errors" \
 	--infobox  "Build Aborted Do to errors, zImage doesnt exist,\n\
 	Unsuccessful Build.." 7 65 ; read
 	cd $ZIP_MOVE
-	rm -rf NebulaKernel_"$REV"_MR_"$VARIANT"_"$KVER".zip
+	rm -rf Nebula2eKernel_"$REV"_MR_"$VARIANT"_"$KVER".zip
 	cd $KERNEL_DIR
 	fi
 }
@@ -557,7 +557,7 @@ DATE_START=$(date +"%s")
 
 function build_kernels {
 echo -e "${green}"
-echo "NebulaKerrnel Creation Script:"
+echo "Nebula2eKerrnel Creation Script:"
 echo -e "${restore}"
 
 ## Build Menu ##
@@ -720,7 +720,7 @@ main() {
 
 echo -e "${green}"
 echo "--------------------------------------------------------"
-echo "NebulaKernel_'$REV'_MR_'$VARIANT'_'$KVER'-signed.zip"
+echo "Nebula2eKernel_'$REV'_MR_'$VARIANT'_'$KVER'-signed.zip"
 echo "Created Successfully.."
 echo "Build Completed in:"
 echo "--------------------------------------------------------"
