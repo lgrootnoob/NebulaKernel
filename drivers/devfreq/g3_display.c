@@ -70,8 +70,8 @@ struct platform_driver g3_display_driver = {
 
 static int g3_cur_level = _LV_END_ - 1;
 struct display_opp_table g3_display_opp_table[] = {
-	{LV_0, 38, 0},
-	{LV_1, 38, 0},
+	{LV_0, 24, 0},
+	{LV_1, 24, 0},
 };
 
 static int g3_get_cur_freq(struct device *dev, unsigned long *freq){
@@ -82,7 +82,7 @@ static int g3_get_cur_freq(struct device *dev, unsigned long *freq){
 
 // Profile Display OPP
 struct devfreq_dev_profile g3_display_profile = {
-	.initial_freq = 38,
+	.initial_freq = 24,
 	.polling_ms = 0,
 	.get_dev_status = g3_display_get_dev_status,
 	.target = g3_display_profile_target,
@@ -256,17 +256,8 @@ int g3_display_send_event_to_mdss_display(unsigned long val, void *v){
 		return 0;
 	}
 
-	if (wdfps < 38) {
-		pr_err("Unsupported FPS. Configuring to min_fps = 30\n");
-		wdfps = 38;
+		wdfps = 24;
 		ret = mdss_mdp_ctl_update_fps(mdp5_data->ctl, wdfps);
-	} else if (wdfps > 60) {
-		pr_err("Unsupported FPS. Configuring to max_fps = 60\n");
-		wdfps = 38;
-		ret = mdss_mdp_ctl_update_fps(mdp5_data->ctl, wdfps);
-	} else {
-		ret = mdss_mdp_ctl_update_fps(mdp5_data->ctl, wdfps);
-	}
 	if (!ret) {
 		trace("%s: configured to '%d' FPS\n", __func__, wdfps);
 	} else {
