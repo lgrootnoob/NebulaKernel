@@ -27,7 +27,7 @@
 #define F2FS_XATTR_REFCOUNT_MAX         1024
 
 /* Name indexes */
-#define F2FS_SYSTEM_ADVISE_NAME			"system.advise"
+#define F2FS_SYSTEM_ADVISE_PREFIX		"system.advise"
 #define F2FS_XATTR_INDEX_USER			1
 #define F2FS_XATTR_INDEX_POSIX_ACL_ACCESS	2
 #define F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT	3
@@ -37,7 +37,6 @@
 #define F2FS_XATTR_INDEX_ADVISE			7
 /* Should be same as EXT4_XATTR_INDEX_ENCRYPTION */
 #define F2FS_XATTR_INDEX_ENCRYPTION		9
-#define F2FS_XATTR_INDEX_KEY			10
 
 #define F2FS_XATTR_NAME_ENCRYPTION_CONTEXT	"c"
 
@@ -113,6 +112,8 @@ struct f2fs_xattr_entry {
 #ifdef CONFIG_F2FS_FS_XATTR
 extern const struct xattr_handler f2fs_xattr_user_handler;
 extern const struct xattr_handler f2fs_xattr_trusted_handler;
+extern const struct xattr_handler f2fs_xattr_acl_access_handler;
+extern const struct xattr_handler f2fs_xattr_acl_default_handler;
 extern const struct xattr_handler f2fs_xattr_advise_handler;
 extern const struct xattr_handler f2fs_xattr_security_handler;
 
@@ -127,8 +128,7 @@ extern ssize_t f2fs_listxattr(struct dentry *, char *, size_t);
 
 #define f2fs_xattr_handlers	NULL
 static inline int f2fs_setxattr(struct inode *inode, int index,
-		const char *name, const void *value, size_t size,
-		struct page *page, int flags)
+		const char *name, const void *value, size_t size, int flags)
 {
 	return -EOPNOTSUPP;
 }
