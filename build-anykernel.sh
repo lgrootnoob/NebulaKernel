@@ -557,7 +557,7 @@ DATE_START=$(date +"%s")
 
 function build_kernels {
 echo -e "${green}"
-echo "Nebula2eKerrnel Creation Script:"
+echo "Nebula2eKernel Creation Script:"
 echo -e "${restore}"
 
 ## Build Menu ##
@@ -653,6 +653,7 @@ dialog --title "Build Kernel" \
 	response=$?
 	case $response in
 	0) 	build_log
+		rm -rf firmware/synaptics/g3/*gen*
 		change_variant
 		make_kernel
 		make_dtb
@@ -704,9 +705,9 @@ case $menuitem in
 		Settings) menu_settings ;;
 		Test) file=build-anykernel.sh; check_filesize ;;
 		2Test) echo "kernel: $KERNEL_DIR and $ZIMAGE_DIR"; exit ;;
-		Exit) echo "Bye"; exit;;
+		Exit) echo "Bye"; return;;
 		Cancel) exit ;;
-		255) echo "Cancel"; exit;;
+		255) echo "Cancel"; exit;
 esac
  
  done
