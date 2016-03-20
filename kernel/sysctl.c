@@ -1280,7 +1280,11 @@ static struct ctl_table vm_table[] = {
 		.procname	= "laptop_mode",
 		.data		= &laptop_mode,
 		.maxlen		= sizeof(laptop_mode),
+#ifdef CONFIG_LGRN_HARDCODE
+		.mode		= 0444,
+#else
 		.mode		= 0644,
+#endif
 		.proc_handler	= proc_dointvec_jiffies,
 	},
 	{
