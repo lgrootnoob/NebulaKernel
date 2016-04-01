@@ -682,11 +682,7 @@ Choose the TASK" 23 60 15 \
 	"Log" "Logging Options [Log: $ERROR_LOG]" \
 	"Ccache" "Clear Ccache" \
 	"Bump" "Bump Version" \
-	"SA_Synapse" "Build UCI Scripts (Stand Alone)" \
-	"bump_uci" "Bump UCI Version" \
 	"Settings" "Settings" \
-	"Test" "Testing Stage Area" \
-	"2Test" "Test 2" \
 	"Exit" "Exit to the shell" 2>"${INPUT}"
  
 	menuitem=$(<"${INPUT}")
@@ -700,11 +696,7 @@ case $menuitem in
 		Log) menu_log ;;
 		Ccache) echo "Clearing Ccache.."; rm -rf ${HOME}/.ccache ;;
 		Bump) bump_defconfigs ;;
-		SA_Synapse) Build_Stand_Alone_Synapse ;;
-		bump_uci) bump_uci ;;
 		Settings) menu_settings ;;
-		Test) file=build-anykernel.sh; check_filesize ;;
-		2Test) echo "kernel: $KERNEL_DIR and $ZIMAGE_DIR"; exit ;;
 		Exit) echo "Bye"; return;;
 		Cancel) exit ;;
 		255) echo "Cancel"; exit;
