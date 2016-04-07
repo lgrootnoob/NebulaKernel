@@ -79,7 +79,7 @@ export SUBARCH=$SUBARCH
 export KBUILD_BUILD_USER=$KBUILD_BUILD_USER
 export KBUILD_BUILD_HOST=$KBUILD_BUILD_USER
 export CCACHE=$CCACHE
-export USE_SCRIPTS=$USE_SCRIPTS
+export USE_SCRIPTS=0
 #export ERROR_LOG=$ERROR_LOG
 
 ##################################################################
